@@ -467,7 +467,7 @@ function Dashboard() {
                 />
               </svg>
             </div>
-            <div className="bg-[#f3f3f7] px-8 py-4 rounded-2xl flex flex-col gap-3">
+            <div className="bg-[#f3f3f7] px-6 py-5 rounded-2xl flex flex-col gap-3">
               {[
                 {
                   name: "New resume analysis",
