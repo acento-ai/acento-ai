@@ -20,8 +20,10 @@ jobs:
       - name: Move into directory
         run: cd frontend
 
-      - name: Install dependencies
+      - name: Install dependencies in frontend
         uses: bahmutov/npm-install@v1
+        with:
+          working-directory: frontend
 
       - name: Build project
         run: npm run build
