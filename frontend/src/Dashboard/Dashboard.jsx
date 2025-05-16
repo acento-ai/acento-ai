@@ -14,6 +14,7 @@ import { auth } from "../services/firebase";
 import Dropzone, { useDropzone } from "react-dropzone";
 import Logo from "../components/Logo";
 import PDFViewer from "./PDFRenderer";
+import { sendFile } from "./dashboard-actions";
 
 function Dashboard() {
   const constraints = { audio: true };
@@ -34,6 +35,8 @@ function Dashboard() {
   const [textData, setTextData] = useState("");
   const [resumeFile, setResumeFile] = useState(null);
   const [chatInput, setChatInput] = useState("");
+
+  const [isFetchingData, setisFetchingData] = useState(false);
 
   const onDrop = useCallback((acceptedFiles) => {
     // Do something with the files
@@ -295,6 +298,30 @@ function Dashboard() {
     }
   }, [currentChatUid, currentUser.uid]); */
 
+  const handleSend = async (addLastMessage = false) => {
+    // console.log(chatInput);
+
+    if (addLastMessage) {
+      const inputElement = document.querySelector("#chatInput");
+      if (inputElement) {
+        localAppendMessages({ content: inputElement.value, fromUser: true });
+        inputElement.value = "";
+      }
+    }
+
+    // localAppendMessages({ content: chatInput, fromUser: true });
+
+    setisFetchingData(true);
+    var messages = localFetchMessages();
+    messages.pop(0);
+    messages = JSON.stringify(messages);
+    const result = await sendFile(resumeFile, messages);
+    console.log(result);
+    localAppendMessages({ content: result.feedback, fromUser: false });
+    // localSetResponse(result.feedback);
+    setisFetchingData(false);
+  };
+
   const formatSize = (sizeInBytes) => {
     if (sizeInBytes < 1024) return `${sizeInBytes} bytes`;
     else if (sizeInBytes < 1048576)
@@ -327,6 +354,17 @@ function Dashboard() {
   const localFetchMessages = () => {
     return JSON.parse(localStorage.getItem("messages"));
   };
+
+  // const localSetResponse = (message) => {
+  //   let messages = localFetchMessages();
+  //   messages.pop();
+  //   messages.push({
+  //     content: message,
+  //     fromUser: false,
+  //   });
+  //   setChats(messages);
+  //   localStorage.setItem("messages", JSON.stringify(messages));
+  // };
 
   const localAppendMessages = (message) => {
     let oldMessages = localFetchMessages();
@@ -560,16 +598,78 @@ function Dashboard() {
                 </div>
               ) : (
                 <div
-                  className={`max-w-[75%] p-4 my-4 rounded-xl font-medium ${
+                  className={`max-w-[75%] w-fit p-4 my-4 rounded-xl font-medium ${
                     message.fromUser
-                      ? "ml-auto bg-[#070036] text-white"
-                      : "mr-auto bg-white text-black"
+                      ? "ml-auto bg-[#070036] text-white text-right"
+                      : "mr-auto bg-white text-black text-right"
                   }`}
                 >
-                  {JSON.stringify(message)}
+                  {message.content}
                 </div>
               );
             })}
+            {isFetchingData && (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 200 200"
+                className="size-16 bg-white p-4 rounded-xl"
+              >
+                <circle
+                  fill="#070036"
+                  stroke="#070036"
+                  stroke-width="12"
+                  r="15"
+                  cx="40"
+                  cy="100"
+                >
+                  <animate
+                    attributeName="opacity"
+                    calcMode="spline"
+                    dur="2"
+                    values="1;0;1;"
+                    keySplines=".5 0 .5 1;.5 0 .5 1"
+                    repeatCount="indefinite"
+                    begin="-.4"
+                  ></animate>
+                </circle>
+                <circle
+                  fill="#070036"
+                  stroke="#070036"
+                  stroke-width="12"
+                  r="15"
+                  cx="100"
+                  cy="100"
+                >
+                  <animate
+                    attributeName="opacity"
+                    calcMode="spline"
+                    dur="2"
+                    values="1;0;1;"
+                    keySplines=".5 0 .5 1;.5 0 .5 1"
+                    repeatCount="indefinite"
+                    begin="-.2"
+                  ></animate>
+                </circle>
+                <circle
+                  fill="#070036"
+                  stroke="#070036"
+                  stroke-width="12"
+                  r="15"
+                  cx="160"
+                  cy="100"
+                >
+                  <animate
+                    attributeName="opacity"
+                    calcMode="spline"
+                    dur="2"
+                    values="1;0;1;"
+                    keySplines=".5 0 .5 1;.5 0 .5 1"
+                    repeatCount="indefinite"
+                    begin="0"
+                  ></animate>
+                </circle>
+              </svg>
+            )}
             <div className="h-20"></div>
           </div>
           <div className="inline-flex justify-center items-center rounded-2xl bg-white mx-4 px-6 py-4 max-w-240 fixed bottom-4 left-[50%] translate-x-[calc(-50%-1rem)] w-[calc(100vw-4rem)]">
@@ -578,10 +678,7 @@ function Dashboard() {
               type="text"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
-                  console.log(chatInput);
-
-                  const inputElement = document.querySelector("#chatInput");
-                  inputElement.value = "";
+                  handleSend(true);
                 }
               }}
               className="grow focus-visible:outline-none"
@@ -595,6 +692,9 @@ function Dashboard() {
               fill="none"
               viewBox="0 0 24 24"
               stroke-width="1.5"
+              onClick={() => {
+                handleSend(true);
+              }}
               stroke={chatInput === "" ? "gray" : "black"}
               className={`size-6 ${chatInput !== "" && "cursor-pointer"}`}
             >
@@ -687,6 +787,7 @@ function Dashboard() {
                             };
                             // console.log(newData);
                             localAppendMessages(newData);
+                            handleSend();
                           };
                           reader.readAsDataURL(resumeFile);
                         },
