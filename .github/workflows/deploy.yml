@@ -1,74 +1,62 @@
-name: Deploy Jekyll Site
+name: Deploy site with frontend and Jekyll
 
 on:
   push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
   build:
-    name: Build Jekyll and Frontend
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Build React frontend
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install frontend dependencies
-        run: npm ci
-        working-directory: frontend
-
+      # Build frontend first
       - name: Build frontend
-        run: npm run build
         working-directory: frontend
+        run: |
+          npm install
+          npm run build
 
       # Build Jekyll site
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
+      - name: Setup Ruby and Jekyll
+        uses: ruby/setup-ruby@v1
         with:
-          source: ./
-          destination: ./_site
+          ruby-version: 3.1
 
-      # Move frontend build into Jekyll output directory
-      - name: Copy frontend build to Jekyll site
+      - name: Install Jekyll dependencies
+        run: bundle install
+
+      - name: Build Jekyll site
+        run: bundle exec jekyll build -d _site
+
+      # Copy frontend dist into Jekyll site folder (_site/frontend)
+      - name: Copy frontend build into Jekyll site
         run: |
           mkdir -p _site/frontend
           cp -r frontend/dist/* _site/frontend/
 
-      - name: Upload final site artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          path: ./_site
+          path: _site
 
   deploy:
-    name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
+      url: ${{ steps.deploy-pages.outputs.page_url }}
     steps:
+      - name: Download Pages artifact
+        uses: actions/download-pages-artifact@v1
+
       - name: Deploy to GitHub Pages
-        id: deployment
+        id: deploy-pages
         uses: actions/deploy-pages@v4
