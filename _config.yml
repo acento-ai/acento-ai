@@ -1,0 +1,16 @@
+# Site settings
+title: Acento.ai
+description: 
+baseurl: "" # leave this empty unless your site is in a subfolder
+url: "https://acento-ai.github.io" # update with your GitHub Pages URL
+
+# Build settings
+theme: jekyll-theme-primer
+markdown: kramdown
+
+# Exclude folders that break the build (like frontend packages)
+exclude:
+  - node_modules
+  - frontend/node_modules
+  - frontend/dist
+  - frontend/build
