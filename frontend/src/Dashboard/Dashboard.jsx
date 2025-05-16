@@ -13,6 +13,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../services/firebase";
 import Dropzone, { useDropzone } from "react-dropzone";
 import Logo from "../components/Logo";
+import PDFViewer from "./PDFRenderer";
 
 function Dashboard() {
   const constraints = { audio: true };
@@ -347,7 +348,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="w-dvw h-dvh flex flex-col">
+    <div className="w-svw h-svh flex flex-col">
       <section className="py-6 px-8 flex items-center justify-start">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -536,8 +537,8 @@ function Dashboard() {
             {chats.map((message) => {
               return message.type === "pdf" ? (
                 <div className="max-w-[75%] my-4 rounded-xl ml-auto bg-[#070036] text-white">
-                  <iframe
-                    src={URL.createObjectURL(retrieveFile(message.content))}
+                  {/* <iframe
+                    src={URL.createObjectURL()}
                     className="w-full border-0 border-none overflow-clip aspect-video rounded-xl"
                     frameborder="0"
                     hspace="0"
@@ -546,7 +547,10 @@ function Dashboard() {
                     marginwidth="0"
                     style={{ pointerEvents: "none", border: "0" }} // Disable interaction (no scrolling)
                     name="Preview"
-                  />
+                  /> */}
+                  {retrieveFile(message.content) && (
+                    <PDFViewer file={message.content} />
+                  )}
                   <div className="p-4">
                     <h1 className="text-xl">{message.name}</h1>
                     <p className="text-[#aaa] text-sm">
