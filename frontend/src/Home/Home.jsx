@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import "./../index.css";
 import "./Home.css";
 // import lines from "./../assets/lines.svg";
-import "./Lines";
+// import "./Lines";
+import linesSvg from "../assets/lines.svg";
 import logo1 from "./../assets/logos/logo1.svg";
 import logo2 from "./../assets/logos/logo2.svg";
 import logo3 from "./../assets/logos/logo3.svg";
@@ -268,7 +269,7 @@ const HomePage = () => {
           interview with Acento.ai.
         </p>
         <img
-          src="/src/assets/lines.svg"
+          src={linesSvg}
           className="opacity-40 -mx-8 my-10 animate-oscillate"
         />
         <div className="">
@@ -317,7 +318,7 @@ const HomePage = () => {
           </div>
         </div>
         <img
-          src="/src/assets/lines.svg"
+          src={linesSvg}
           className="w-full h-full max-w-[60%] max-h-[60%] m-auto opacity-40 animate-oscillate"
         />
       </section>
