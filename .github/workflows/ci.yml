@@ -1,62 +1,49 @@
-name: Deploy site with frontend and Jekyll
+name: Deploy
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    branches:
+      - main
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Build frontend first
-      - name: Build frontend
-        working-directory: frontend
-        run: |
-          npm install
-          npm run build
+      - name: Setup Node
+        uses: actions/setup-node@v4
 
-      # Build Jekyll site
-      - name: Setup Ruby and Jekyll
-        uses: ruby/setup-ruby@v1
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+
+      - name: Build project
+        run: npm run build
+
+      - name: Upload production-ready build files
+        uses: actions/upload-artifact@v4
         with:
-          ruby-version: 3.1
-
-      - name: Install Jekyll dependencies
-        run: bundle install
-
-      - name: Build Jekyll site
-        run: bundle exec jekyll build -d _site
-
-      # Copy frontend dist into Jekyll site folder (_site/frontend)
-      - name: Copy frontend build into Jekyll site
-        run: |
-          mkdir -p _site/frontend
-          cp -r frontend/dist/* _site/frontend/
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: _site
+          name: production-files
+          path: ./dist
 
   deploy:
+    name: Deploy
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy-pages.outputs.page_url }}
+    if: github.ref == 'refs/heads/main'
+
     steps:
-      - name: Download Pages artifact
-        uses: actions/download-pages-artifact@v1
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: production-files
+          path: ./dist
 
       - name: Deploy to GitHub Pages
-        id: deploy-pages
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
