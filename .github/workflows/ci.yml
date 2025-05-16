@@ -1,46 +1,62 @@
-# This is a basic workflow to help you get started with Actions
+name: Deploy site with frontend and Jekyll
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 jobs:
-  build-and-commit:
-    name: Build and Commit Frontend
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm ci
+      # Build frontend first
+      - name: Build frontend
         working-directory: frontend
-
-      - name: Build project
-        run: npm run build
-        working-directory: frontend
-
-      - name: Commit built files
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f frontend/dist
-          git commit -m "chore: update frontend build [skip ci]" || echo "No changes to commit"
-          git push origin main
+          npm install
+          npm run build
+
+      # Build Jekyll site
+      - name: Setup Ruby and Jekyll
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1
+
+      - name: Install Jekyll dependencies
+        run: bundle install
+
+      - name: Build Jekyll site
+        run: bundle exec jekyll build -d _site
+
+      # Copy frontend dist into Jekyll site folder (_site/frontend)
+      - name: Copy frontend build into Jekyll site
+        run: |
+          mkdir -p _site/frontend
+          cp -r frontend/dist/* _site/frontend/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-pages.outputs.page_url }}
+    steps:
+      - name: Download Pages artifact
+        uses: actions/download-pages-artifact@v1
+
+      - name: Deploy to GitHub Pages
+        id: deploy-pages
+        uses: actions/deploy-pages@v4
