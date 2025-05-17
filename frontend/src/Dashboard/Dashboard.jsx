@@ -14,7 +14,9 @@ import { auth } from "../services/firebase";
 import Dropzone, { useDropzone } from "react-dropzone";
 import Logo from "../components/Logo";
 import PDFViewer from "./PDFRenderer";
-import { sendFile } from "./dashboard-actions";
+import { sendFile, sendFileChat } from "./dashboard-actions";
+
+import Markdown from "react-markdown";
 
 function Dashboard() {
   const constraints = { audio: true };
@@ -37,6 +39,7 @@ function Dashboard() {
   const [chatInput, setChatInput] = useState("");
 
   const [isFetchingData, setisFetchingData] = useState(false);
+  const scrollRef = useRef(null);
 
   const onDrop = useCallback((acceptedFiles) => {
     // Do something with the files
@@ -298,6 +301,51 @@ function Dashboard() {
     }
   }, [currentChatUid, currentUser.uid]); */
 
+  const handleSendChat = async () => {
+    const inputElement = document.querySelector("#chatInput");
+    if (inputElement) {
+      localAppendMessages({ content: inputElement.value, fromUser: true });
+      inputElement.value = "";
+    }
+
+    const scroller = document.querySelector("#scrollId");
+    if (scroller) {
+      const lastMessage = scroller.lastElementChild;
+      if (lastMessage) {
+        lastMessage.scrollIntoView({ behavior: "smooth" });
+      } else {
+        console.log("Last message DNE");
+      }
+    } else {
+      console.log("Last element DNE");
+    }
+
+    setisFetchingData(true);
+    var messages = localFetchMessages();
+    const lastMessage = messages.pop();
+    messages.shift();
+    messages = JSON.stringify(messages);
+    console.log(
+      `${typeof resumeFile} AND ${messages.substring(0, 20)} AND ${
+        lastMessage.content
+      }`
+    );
+    const result = await sendFileChat(
+      resumeFile,
+      messages,
+      lastMessage.content
+    );
+
+    console.log(result);
+    localAppendMessages({
+      content: result,
+      fromUser: false,
+      type: "modelResponse",
+    });
+
+    setisFetchingData(false);
+  };
+
   const handleSend = async (addLastMessage = false) => {
     // console.log(chatInput);
 
@@ -317,7 +365,11 @@ function Dashboard() {
     messages = JSON.stringify(messages);
     const result = await sendFile(resumeFile, messages);
     console.log(result);
-    localAppendMessages({ content: result.feedback, fromUser: false });
+    localAppendMessages({
+      content: result,
+      fromUser: false,
+      type: "modelResponse",
+    });
     // localSetResponse(result.feedback);
     setisFetchingData(false);
   };
@@ -571,7 +623,7 @@ function Dashboard() {
       </section>
       {chats !== null ? (
         <div className="w-full h-full px-4">
-          <div className="w-full h-full max-w-240 mx-auto -my-4">
+          <div className="w-full h-full max-w-240 mx-auto -my-4" id="scrollId">
             {chats.map((message) => {
               return message.type === "pdf" ? (
                 <div className="max-w-[75%] my-4 rounded-xl ml-auto bg-[#070036] text-white">
@@ -595,6 +647,33 @@ function Dashboard() {
                       Size: {formatSize(retrieveFile(message.content).size)}
                     </p>
                   </div>
+                </div>
+              ) : message.type === "modelResponse" ? (
+                <div
+                  className={`max-w-[75%] w-fit p-4 my-4 rounded-xl font-medium mr-auto bg-white text-black [&>*:not(:last-child)]:mb-6 [&_ul]:list-disc [&_ul]:ml-4 [&_li]:mb-2 [&_li:last-child]:mb-6`}
+                >
+                  {
+                    <>
+                      {/* <h2 className="mb-4 text-2xl">Your strengths</h2>
+                      <Markdown>{message.content["Your Strengths"]}</Markdown>
+                      <br />
+                      <h2 className="mb-4 text-2xl">Suggested improvements</h2>
+                      <Markdown>{message.content["Improvements"]}</Markdown> */}
+                      {/* <Markdown>{Object.keys(message.content)}</Markdown> */}
+                      <Markdown>{message.content.feedback}</Markdown>
+                      {/* {message.content.feedback} */}
+
+                      {/* {Object.keys(message.content).map((key) => {
+                        return (
+                          <>
+                            <h2 className="text-2xl">{key}</h2>
+                            <Markdown>{message.content[key]}</Markdown>
+                            <div className="mb-4"></div>
+                          </>
+                        );
+                      })} */}
+                    </>
+                  }
                 </div>
               ) : (
                 <div
@@ -677,8 +756,8 @@ function Dashboard() {
               id="chatInput"
               type="text"
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleSend(true);
+                if (e.key === "Enter" && chatInput !== "") {
+                  handleSendChat(true);
                 }
               }}
               className="grow focus-visible:outline-none"
@@ -693,7 +772,9 @@ function Dashboard() {
               viewBox="0 0 24 24"
               stroke-width="1.5"
               onClick={() => {
-                handleSend(true);
+                if (chatInput !== "") {
+                  handleSendChat(true);
+                }
               }}
               stroke={chatInput === "" ? "gray" : "black"}
               className={`size-6 ${chatInput !== "" && "cursor-pointer"}`}
