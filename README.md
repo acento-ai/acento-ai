@@ -26,6 +26,7 @@ Every great career begins with a single conversation. Yet high-stakes interviews
 Devpost: [https://devpost.com/software/acento-ai](https://devpost.com/software/acento-ai)
 
 Check out the live demo [here](https://theamanm.github.io/acento-ai/)
+(Note. Demo doesn't include audio coaching due to fees for hosting models, please refer to [Running Locally](#running-locally))
 
 
 ---
